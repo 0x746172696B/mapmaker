@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+import json
 
 
 def test_create_map_returns_a_valid_uuid_string(server):
@@ -70,3 +71,20 @@ def test_all_tools_are_registered(server):
 def test_tool_descriptions_exist_for_llm_guidance(server):
     tools = asyncio.run(server.mcp.list_tools())
     assert all(t.description for t in tools)
+
+
+def test_successful_fill_persists_blocks_to_state_file(server, state_file):
+    map_id = server.create_map(size=10)
+    server.fill(map_id=map_id, start=[0, 0, 0], end=[2, 2, 2])
+
+    data = json.loads(state_file.read_text())
+    assert len(data[map_id]["blocks"]) == 27
+    assert data[map_id]["size"] == 10
+
+
+def test_failed_fill_does_not_persist_blocks(server, state_file):
+    map_id = server.create_map(size=10)
+    server.fill(map_id=map_id, start=[5, 5, 5], end=[12, 12, 12])
+
+    data = json.loads(state_file.read_text())
+    assert data[map_id]["blocks"] == []

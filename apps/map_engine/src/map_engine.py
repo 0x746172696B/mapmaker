@@ -59,6 +59,10 @@ class MapEngine:
                     if (x - center.x) ** 2 + (z - center.z) ** 2 <= radius**2:
                         game_map.set_block(x, y, z, BlockStatus.Active)
 
+    def maps(self) -> dict[uuid.UUID, "Map"]:
+        """Snapshot of all maps by id."""
+        return dict(self._maps)
+
     @staticmethod
     def _box_coords(
         game_map: Map, start: Coord, end: Coord

@@ -1,4 +1,7 @@
+import json
+import os
 import uuid
+from pathlib import Path
 from types import SimpleNamespace
 
 from mcp.server.fastmcp import FastMCP
@@ -7,14 +10,28 @@ from apps.contracts.action import Cylinder, Fill, HollowBox
 from apps.contracts.coord import Coord
 from apps.map_engine.src.map_engine import MapEngine
 
+STATE_FILE = Path("state/maps.json")
 
-def create_server() -> SimpleNamespace:
+
+def create_server(state_file: Path = STATE_FILE) -> SimpleNamespace:
     mcp = FastMCP("mapmaker")
     engine = MapEngine()
 
+    def _persist() -> None:
+        state_file.parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            str(mid): {"size": m.size, "blocks": [list(c) for c in m.active_blocks()]}
+            for mid, m in engine.maps().items()
+        }
+        tmp = state_file.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data))
+        os.replace(tmp, state_file)
+
     def _run(fn) -> str:
         try:
-            return fn()
+            result = fn()
+            _persist()
+            return result
         except (ValueError, KeyError) as e:
             return f"error: {e}"
 
@@ -82,5 +99,8 @@ def create_server() -> SimpleNamespace:
     )
 
 
+_default = create_server()
+mcp = _default.mcp
+
 if __name__ == "__main__":
-    create_server().mcp.run()
+    mcp.run()
