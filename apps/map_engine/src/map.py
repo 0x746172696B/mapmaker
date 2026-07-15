@@ -1,4 +1,6 @@
+from collections.abc import Iterator
 from apps.contracts.block_status import BlockStatus
+from apps.contracts.coord import Coord
 
 
 class Map:
@@ -16,6 +18,9 @@ class Map:
             self._blocks.pop((x, y, z), None)
         else:
             self._blocks[(x, y, z)] = status
+
+    def active_blocks(self) -> Iterator[Coord]:
+        yield from (Coord(*pos) for pos in self._blocks)
 
     def blocks_count(self) -> int:
         return self.size**3
