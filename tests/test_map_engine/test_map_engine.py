@@ -74,3 +74,12 @@ def test_out_of_bounds_fill_raises_and_changes_nothing(map_engine):
     with pytest.raises(ValueError):
         map_engine.do(map_id, Fill(start=Coord(5, 5, 5), end=Coord(12, 12, 12)))
     assert map_engine.get_map(map_id).active_blocks_count() == 0
+
+
+def test_active_blocks_yields_set_coords(map_engine):
+    map_id = map_engine.create_map(size=10)
+    game_map = map_engine.get_map(map_id)
+    game_map.set_block(1, 2, 3, BlockStatus.Active)
+    game_map.set_block(4, 5, 6, BlockStatus.Active)
+
+    assert set(game_map.active_blocks()) == {Coord(1, 2, 3), Coord(4, 5, 6)}
