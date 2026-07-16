@@ -19,13 +19,13 @@ The goal is allow an agent to dynamically generate and update maps following use
 - Update areas
 - Fetch available pre-made structures
 
-## Demo
+## Demo 1
 
 ### Viewer
 
-![Demo_image](demo.png)
+![Demo1_image](demo.png)
 
-### Prompt used in claude code
+### Prompt used
 
 ```
 Using the mapmaker tools, create a map of size 120 and build a fortified river city:
@@ -54,4 +54,18 @@ Smaller district: 4 warehouses (hollow boxes ~10x6x8) arranged in a row parallel
 A market: a cluster of small solid platforms (3x1x3) near one bridge
 
 Plan the coordinate layout before placing anything: list each structure with its bounding coordinates, check nothing overlaps and everything fits, then build. Use map_summary periodically to sanity-check. Coordinates are 0-indexed, y is up. When finished, report total blocks and describe the skyline from the river.
+```
+
+## Demo 2
+
+### Viewer
+
+![Demo2_image](demo2.png)
+
+### Prompt Used
+
+```
+Using the mapmaker tools, create a map of size 120 and build a fortified river city. A river winds through it — not a straight channel, something with bends and varying width, the way real rivers cut through terrain. The city grew around the river: older, denser construction near the water, grander structures on higher ground, defenses where the geography demands them rather than in a neat square.
+You have fill, hollow_box, and cylinder — but don't think of structures as single primitives. A convincing shape is usually many small overlapping operations: a winding river is dozens of short offset segments, a hill is stacked shrinking layers, a ruined wall is fills with irregular tops. Fidelity comes from composition, not from the primitive.
+Plan the character of the city first — its geography, its districts, its story — then build it. Take as many operations as the vision needs. Coordinates are 0-indexed, y is up, 120³ space. When done, describe what a traveler arriving by the river would see.
 ```
