@@ -43,6 +43,24 @@ def create_server(state_file: Path = STATE_FILE) -> SimpleNamespace:
         except (ValueError, KeyError) as e:
             return f"error: {e}"
 
+    def _parse_op(op: dict):
+        kind = op.get("op")
+        color = HexColor(op.get("color", DEFAULT_COLOR))
+        if kind == "fill":
+            return Fill(start=Coord(*op["start"]), end=Coord(*op["end"]), color=color)
+        if kind == "hollow_box":
+            return HollowBox(
+                start=Coord(*op["start"]), end=Coord(*op["end"]), color=color
+            )
+        if kind == "cylinder":
+            return Cylinder(
+                center=Coord(*op["center"]),
+                radius=op["radius"],
+                height=op["height"],
+                color=color,
+            )
+        raise ValueError(f"unknown op '{kind}', expected fill, hollow_box, or cylinder")
+
     @mcp.tool()
     def create_map(size: int) -> str:
         """Create a new empty 3D map of size x size x size. y is up. Returns the map id."""
@@ -108,6 +126,40 @@ def create_server(state_file: Path = STATE_FILE) -> SimpleNamespace:
         return _run(op)
 
     @mcp.tool()
+    def batch_ops(map_id: str, operations: list[dict]) -> str:
+        """Apply many build operations in a single call. Much more efficient than
+        individual calls — prefer this for any build of more than a few operations.
+
+        Each operation is a dict:
+          {"op": "fill", "start": [x,y,z], "end": [x,y,z], "color": "#RRGGBB"}
+          {"op": "hollow_box", "start": [x,y,z], "end": [x,y,z], "color": "#RRGGBB"}
+          {"op": "cylinder", "center": [x,y,z], "radius": r, "height": h, "color": "#RRGGBB"}
+        color is optional. Coordinates are [x, y, z], 0-indexed, y is up.
+
+        Operations apply in order. If one fails, earlier ones remain applied,
+        that one and all later ones are skipped, and the error names the failing index.
+        """
+
+        def op():
+            mid = uuid.UUID(map_id)
+            try:
+                actions = [_parse_op(o) for o in operations]
+            except (ValueError, KeyError, TypeError) as e:
+                return f"error: no operations applied, malformed operation: {e}"
+            for i, action in enumerate(actions):
+                try:
+                    engine.do(mid, action)
+                except (ValueError, KeyError) as e:
+                    return (
+                        f"applied operations 0..{i - 1} ({i} ok); "
+                        f"operation {i} failed: {e}; "
+                        f"operations {i}..{len(actions) - 1} skipped"
+                    )
+            return f"ok, applied {len(actions)} operations"
+
+        return _run(op)
+
+    @mcp.tool()
     def map_summary(map_id: str) -> str:
         """Get the size and number of placed blocks of a map."""
 
@@ -124,6 +176,7 @@ def create_server(state_file: Path = STATE_FILE) -> SimpleNamespace:
         fill=fill,
         hollow_box=hollow_box,
         cylinder=cylinder,
+        batch_ops=batch_ops,
         map_summary=map_summary,
     )
 
