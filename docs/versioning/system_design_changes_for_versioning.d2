@@ -1,0 +1,45 @@
+direction: right
+
+classes: {
+  new: {
+    style: {
+      stroke: "#2E7D32"
+      font-color: "#2E7D32"
+      stroke-width: 2
+      fill: "#E8F5E9"
+    }
+  }
+}
+
+legend: green = new for versioning {
+  shape: text
+  style.font-color: "#2E7D32"
+}
+
+agent: AI agent (MCP client)
+
+mcp_server: mcp_server {
+  existing: "tools (existing)\ncreate_map, fill, hollow_box,\ncylinder, batch_ops, map_summary"
+  new_tools: "tools (new)\nlist_maps\nlist_map_versions\nrollback\nset_active_map" {class: new}
+  changed: "changed\nmap_id optional on build tools\n(defaults to active map)\nactive_map_id held here,\nnot in the engine" {class: new}
+}
+
+map_engine: MapEngine {
+  existing: "existing\ncreate_map(size)\nget_map / maps\ndo(map_id, action)"
+  new: "new / changed\ncreate_map(size, description)\ndo() appends a version per action\n(one version per batch_ops call)\nrollback(map_id, version)\nrestores snapshot as a NEW version\nlist_map_versions(map_id)" {class: new}
+}
+
+map: Map {
+  existing: "existing\nsize\nblocks (sparse dict)"
+  new: "new\ndescription\nversions: list of MapVersion\n(number, description,\nblocks snapshot)" {class: new}
+}
+
+state_file: state/maps.json {
+  shape: page
+  v2: "schema v2 (new)\ndescription per map\nversions with descriptions\nv1 files imported as single version" {class: new}
+}
+
+agent -> mcp_server: MCP tool calls
+mcp_server -> map_engine: create / do / rollback / list versions
+map_engine -> map: apply action, snapshot version
+mcp_server -> state_file: persist after each call (schema v2) {class: new}
