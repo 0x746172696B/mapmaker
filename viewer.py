@@ -3,27 +3,34 @@ from pathlib import Path
 
 import pyvista as pv
 
+from apps.map_engine.src.map import Map
+from apps.render_engine.src.render_engine import RenderEngine
+
 STATE_FILE = Path(__file__).resolve().parent / "state" / "maps.json"
 POLL_MS = 250
 
 
-def load_latest_blocks() -> list[tuple[float, float, float]]:
+def load_latest_map() -> Map | None:
     if not STATE_FILE.exists():
-        return []
+        return None
     try:
         maps = json.loads(STATE_FILE.read_text())
     except json.JSONDecodeError:
-        return []
+        return None  # mid-write or corrupt; try again next poll
     if not maps:
-        return []
+        return None
     latest = list(maps.values())[-1]
-    return [tuple(float(v) for v in block) for block in latest["blocks"]]
+    try:
+        return Map.from_state(latest)
+    except (KeyError, TypeError, ValueError):
+        return None  # old-format or hand-edited entry; skip this poll
 
 
 def main() -> None:
     print(f"Watching {STATE_FILE}")
     print("Viewer open — press 'q' in the window to quit.")
 
+    render_engine = RenderEngine()
     plotter = pv.Plotter(title="mapmaker live — q to quit")
     plotter.show_grid()
 
@@ -34,11 +41,12 @@ def main() -> None:
         if mtime == last["mtime"]:
             return
         last["mtime"] = mtime
-        blocks = load_latest_blocks()
+
+        game_map = load_latest_map()
         plotter.clear_actors()
-        if blocks:
-            cubes = pv.PolyData(blocks).glyph(geom=pv.Cube(), scale=False, orient=False)
-            plotter.add_mesh(cubes, color="tan", show_edges=True)
+        if game_map is not None and game_map.active_blocks_count() > 0:
+            scene = render_engine.build_scene(game_map)
+            plotter.add_mesh(scene, scalars="colors", rgb=True, show_edges=True)
         plotter.show_grid()
         plotter.render()
 
