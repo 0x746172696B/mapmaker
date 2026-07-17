@@ -1,7 +1,20 @@
+[project]
+name = "mapmaker"
+version = "0.1.0"
+requires-python = ">=3.13"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["apps*"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
 [dependency-groups]
-dev = [
-    "mcp>=1.28.1",
-    "pytest>=9.1.1",
-    "pyvista>=0.48.4",
-    "ruff>=0.15.21",
-]
+dev = ["mcp>=1.28.1", "pytest>=9.1.1", "pyvista>=0.48.4", "ruff>=0.15.21"]
